@@ -51,14 +51,14 @@ class Memory:
 
 class UserMemory(Memory):
     """UserMemory holds the logic for working with user data."""
-    def __init__(self, session, user_id, channel_id, auth_str, base_url):
+    def __init__(self, session, user_id, channel_id, auth_str, base_url, store):
         """
         Data can be any format for how you want to save.
         Lists or dictionaries are recommended so you can save multiple
         items for each conversation.
         """
         super(UserMemory, self).__init__(session, channel_id, auth_str,
-                                         base_url)
+                                         base_url, store)
         self.user_id = user_id
         self.get_data()
 
@@ -70,14 +70,14 @@ class UserMemory(Memory):
 
 class ConversationMemory(Memory):
     def __init__(self, session, conversation_id, channel_id,
-                 auth_str, base_url):
+                 auth_str, base_url, store):
         """
         Data can be any format for how you want to save.
         Lists or dictionaries are recommended so you can save multiple
         items for each conversation.
         """
         super(ConversationMemory, self).__init__(session, channel_id,
-                                                 auth_str, base_url)
+                                                 auth_str, base_url, store)
         self.conversation_id = conversation_id
         self.channel_id = channel_id
         self.get_data()
@@ -93,12 +93,12 @@ class UserConversationMemory(Memory):
         user data for a specific conversation."""
 
     def __init__(self, session, conversation_id, user_id, channel_id,
-                 auth_str, base_url):
+                 auth_str, base_url, store):
         """
         This method calls the superclass. Data can be any format.
         """
         super(UserConversationMemory, self).__init__(session, channel_id,
-                                                 auth_str, base_url)
+                                                 auth_str, base_url, store)
         self.conversation_id = conversation_id
         self.user_id = user_id
         self.get_data()

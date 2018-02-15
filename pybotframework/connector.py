@@ -1,4 +1,4 @@
-class Connector:
+class Connector():
     """We use this as a public base class.  Customized connectors
     inherit this class as a framework for building them.
 
