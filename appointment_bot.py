@@ -1,11 +1,11 @@
 from pybotframework.botframework import BotFramework
 from pybotframework.regex_connector import RegexConnector
 
-
 regex_conn = RegexConnector(intent_file='regex.json', response_file='responses.json')
 
 my_app = BotFramework(connectors=[regex_conn])
+my_app.set_store_type("redis")
 
 if __name__ == '__main__':
     # Run flask app on port specified here
-    my_app.run_server(host='0.0.0.0', port=3978, debug=True)
+    my_app.run_server(host='localhost', port=3978, debug=True)
