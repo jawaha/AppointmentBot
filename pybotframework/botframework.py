@@ -2,6 +2,7 @@ import os
 import datetime
 import requests
 from pybotframework.memory import UserMemory
+from pybotframework.store import *
 
 import flask
 import json
@@ -26,12 +27,12 @@ class BotFramework(object):
         csrf_protect=True
     ):
         self.connectors = connectors
-
         self.session = requests.Session()
         self.app_client_id = app_client_id or os.environ.get('APP_ID', '')
         self.app_client_secret = app_client_secret or \
             os.environ.get('APP_PASSWORD', '')
         self.auth_str = None
+        self.store = None
 
         # allow users to supply their own flask server
         if server is not None:
@@ -93,6 +94,10 @@ class BotFramework(object):
                 'OIDC_RESOURCE_SERVER_ONLY': True,
                 'OIDC_INTROSPECTION_AUTH_METHOD': 'bearer'}
 
+    def set_store_type(self,store_type):
+        self.store_type = store_type
+
+
     def handle_messages(self):
         if flask.request.method == "POST":
             # User message to bot
@@ -149,8 +154,9 @@ class BotFramework(object):
             "message",
             data["conversation"])
 
-    def process_message(self, message, intent=None, memory=None, conn_itr=None,
+    def process_message(self, complete_data, intent=None, conn_itr=None,
                         *args, **kwargs):
+        message = complete_data["text"]
         message = message.rstrip(".! \n\t")
 
         # Structure message in dict for handling by connector
@@ -183,7 +189,14 @@ class BotFramework(object):
         else:
             response_message = data
 
-        memory.append([message, response_message])
+        user_id = complete_data["from"]["id"]
+        channel_id = complete_data["channelId"]
+
+        if self.store is None:
+            self.store = self.create_store(complete_data,self.get_auth_str())
+
+        self.store.save_user_data(channel_id,user_id,[message, response_message])
+        #memory.append([message, response_message])
         return response_message
 
     def get_auth_str(self):
@@ -203,6 +216,12 @@ class BotFramework(object):
         except KeyError:
             print("Can't create auth string: {}".format(resp_data))
             self.auth_str = ""
+
+    def create_store(self, data, auth_str):
+        self.store = InMemory(data,auth_str,self.session)
+        if self.store_type != 'None':
+            self.store = SessionStore.factory(self.store_type,data,auth_str,self.session)
+        return self.store
 
     def send(self, service_url, channel_id, reply_to_id,
              from_data, recipient_data, message, message_type,
@@ -257,13 +276,12 @@ class BotFramework(object):
         message = data["text"]
         sender_id = data["recipient"]["id"]
 
-        memory = self.get_user_memory(data)
+        #memory = self.get_user_memory(data)
 
         # If there's a LUIS intent involved send off to LUISBot method
         intent = kwargs['intent']
 
-        result = self.process_message(message=message, intent=intent,
-                                      memory=memory)
+        result = self.process_message(complete_data=data, intent=intent)
 
         self.send(
             data["serviceUrl"],
